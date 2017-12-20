@@ -33,7 +33,7 @@ public class BuptOpenIoTApplication extends WebMvcConfigurerAdapter {
 	@RequestMapping("/api/noauth/homepage")
     public String home() {
     	
-        return "homepage1";
+        return "request";
     }
 
 }
