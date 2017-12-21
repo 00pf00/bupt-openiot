@@ -103,7 +103,25 @@ public class HttpClientUtil {
         }
         return sendHttpPost(httpPost);
     }
-
+     public String sendHttpPost(String httpUrl, Map<String, String> params,String token){
+    	 HttpPost httpPost = new HttpPost(httpUrl); // 创建HttpPost
+         httpPost.setHeader("Content-Type", "application/json;charset=UTF-8");
+         httpPost.setHeader("Accept", "application/json");
+         httpPost.setHeader("X-Authorization", "Bearer " + token);
+         Gson gson = new Gson();
+         String body = gson.toJson(params);
+         try {
+             StringEntity entity = new StringEntity(body, "UTF-8");
+             entity.setContentEncoding("UTF-8");
+             entity.setContentType("application/json");
+             httpPost.setEntity(entity);
+         } catch (Exception e) {
+             e.printStackTrace();
+         }
+         return sendHttpPost(httpPost);
+    	 
+     }
+    
     /**
      * 发送post请求
      * @param httpUrl 地址
@@ -281,6 +299,21 @@ public class HttpClientUtil {
 	public String sendHttpGet(String httpUrl, String params, String token) {
     	StringBuffer url = new StringBuffer() ;
     	url.append(httpUrl).append("?").append(params);
+    	HttpGet httpGet = new HttpGet(url.toString());// 创建get请求
+        httpGet.setHeader("Content-Type", "application/json;charset=UTF-8");
+        httpGet.setHeader("Accept", "application/json");
+        httpGet.setHeader("X-Authorization", "Bearer " + token);
+        return sendHttpGet(httpGet);
+    }
+	/** 发送get请求
+	 * @author pf
+	 * @param httpUrl
+	 * @param token
+	 * @return
+	 */
+	public String sendHttpGet(String httpUrl, String token) {
+    	StringBuffer url = new StringBuffer() ;
+    	url.append(httpUrl);
     	HttpGet httpGet = new HttpGet(url.toString());// 创建get请求
         httpGet.setHeader("Content-Type", "application/json;charset=UTF-8");
         httpGet.setHeader("Accept", "application/json");
