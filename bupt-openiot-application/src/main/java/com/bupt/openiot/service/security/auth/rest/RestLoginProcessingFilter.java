@@ -1,11 +1,15 @@
 package com.bupt.openiot.service.security.auth.rest;
 
 import com.bupt.openiot.conf.OpenIoTServerConfig;
+import com.bupt.openiot.dto.UserInfo;
 import com.bupt.openiot.internalsdk.util.HttpClientUtil;
 import com.bupt.openiot.model.LoginToken;
 import com.bupt.openiot.service.security.exception.AuthMethodNotSupportedException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+
+import net.sf.json.JSONObject;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +81,8 @@ public class RestLoginProcessingFilter extends AbstractAuthenticationProcessingF
         return authentication;
     }
 
-    private void loginToOpenIoT(LoginRequest loginRequest, HttpServletRequest request) {
+    @SuppressWarnings("unchecked")
+	private void loginToOpenIoT(LoginRequest loginRequest, HttpServletRequest request) {
         if (loginRequest == null || StringUtils.isEmpty(loginRequest.getUsername()) ||
                 StringUtils.isEmpty(loginRequest.getPassword())) {
             return ;
@@ -92,6 +97,14 @@ public class RestLoginProcessingFilter extends AbstractAuthenticationProcessingF
         HttpSession session = request.getSession();
         session.setAttribute("token", loginToken.getToken());
         session.setAttribute("refreshToken", loginToken.getRefreshToken());
+        responseContent = HttpClientUtil.getInstance().sendHttpGet("http://" + openIoTServerConfig.getServer() + "/api/auth/user", loginToken.getToken());
+        JSONObject json = JSONObject.fromObject(responseContent);
+        UserInfo userInfo = new UserInfo();
+        userInfo.setTenantId((String) ((Map<String,Object>)json.get("tenantId")).get("id"));;
+        userInfo.setCustomId((String) ((Map<String,Object>)json.get("customerId")).get("id"));
+        userInfo.setAuthority((String) json.get("authority"));
+        session.setAttribute("userInfo", userInfo);
+       
     }
 
     @Override
