@@ -2,6 +2,7 @@ package com.bupt.openiot.controller;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +20,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.bupt.openiot.conf.OpenIoTServerConfig;
+import com.bupt.openiot.dto.BackMessage;
 import com.bupt.openiot.dto.DeviceDto;
+import com.bupt.openiot.dto.UserInfo;
 import com.bupt.openiot.internalsdk.util.HttpClientUtil;
 
 import net.sf.json.JSONObject;
@@ -80,5 +83,57 @@ public class DeviceAccessController {
         	deviceList.add(device);
         }
     	return deviceList;
+    }
+    /**
+     * 新增设备并将设备分组，分组是可选项
+     * @author pf
+     * @param name
+     * @param type
+     * @param additionInfo
+     * @param groupId
+     * @return
+     */
+    @RequestMapping(value = "/noauth/addDevice")
+    public BackMessage addDevice(	@RequestParam String name,
+    								@RequestParam String type,
+    								@RequestParam(required = false) String additionInfo ,
+    								@RequestParam(required = false) String groupId){ 
+    	BackMessage message = new BackMessage();
+    	
+    	Map<String,String> map = new HashMap<String, String>();
+    	HttpSession session = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest().getSession();
+    	map.put("name", name);
+    	map.put("type", type);
+    	if(additionInfo !=null && !type.trim().equals("")){
+    		map.put("additionalInfo", additionInfo);
+    	}
+    	String responseContent = HttpClientUtil.getInstance().sendHttpPost(
+                "http://" + openIoTServerConfig.getServer() + "/api/device", map,(String) session.getAttribute("token"));
+    	if(responseContent.trim().equals("") && groupId!= null &&!groupId.trim().equals("")){
+    		String deviceId = null;
+    		
+    		String params = "limit=100";
+    		String devices = HttpClientUtil.getInstance()
+                    .sendHttpGet("http://" + openIoTServerConfig.getServer()
+                            + "/api/tenant/devices", params, (String) session.getAttribute("token"));
+    		JSONObject json = JSONObject.fromObject(responseContent);
+            Object value = json.get("data");
+            List<Map<String, Object>> values = (List<Map<String, Object>>)value;
+            for(Map<String, Object> device:values){
+            	if((String)device.get("name") ==name){
+            		deviceId =  (String)device.get("id");
+            	}
+            }
+            String assignedDevice = HttpClientUtil.getInstance().sendHttpGet("http://" + openIoTServerConfig.getServer()+"/api/group/"+deviceId+"/group/"+groupId, (String) session.getAttribute("token"));
+            JSONObject deviceJson = JSONObject.fromObject(assignedDevice);
+            message.setObj(deviceJson);
+            message.setBackCode("200");
+        	message.setBackMessage("success");
+        	return message ;
+    	}else{
+    		message.setBackCode("200");
+        	message.setBackMessage("success");
+        	return message ;
+    	}    	
     }
 }
